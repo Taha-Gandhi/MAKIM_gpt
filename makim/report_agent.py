@@ -10,6 +10,10 @@ class ReportAgent:
 
         score += len(anomaly_findings.get("new_modules", [])) * 2
         score += len(anomaly_findings.get("missing_modules", [])) * 2
+
+        if anomaly_findings.get("pid_alert", False):
+            score += 2
+
         score += pattern_findings.get("risk_score", 0)
 
         if score >= 8:
