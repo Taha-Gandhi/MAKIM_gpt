@@ -3,12 +3,18 @@ from baseline import BaselineManager
 from anomaly_detector import AnomalyDetector
 from pattern_agent import RootkitPatternAgent
 from report_agent import ReportAgent
+from ai_agent import AIAgent
 
 scanner = ScannerAgent()
 baseline_manager = BaselineManager()
 anomaly_detector = AnomalyDetector()
 pattern_agent = RootkitPatternAgent()
 report_agent = ReportAgent()
+ai_agent = AIAgent()
+explanation = ai_agent.explain(report)
+
+print("\n--- AI ANALYSIS ---")
+print(explanation)
 
 current_snapshot = scanner.collect_snapshot()
 baseline = baseline_manager.load_baseline()
