@@ -4,60 +4,64 @@ from datetime import datetime
 
 
 class ScannerAgent:
-    """
-    ScannerAgent collects raw system data from Linux user space.
-    For version 1, it reads:
-    - loaded kernel modules from /proc/modules
-    - running PIDs from /proc
-    - recent dmesg output
-    """
 
     def get_loaded_modules(self):
         modules = []
-
         try:
-            with open("/proc/modules", "r", encoding="utf-8") as f:
+            with open("/proc/modules", "r") as f:
                 for line in f:
-                    parts = line.strip().split()
-                    if parts:
-                        modules.append(parts[0])
+                    modules.append(line.split()[0])
         except Exception as e:
-            modules.append(f"ERROR_READING_MODULES: {str(e)}")
-
+            modules.append(f"ERROR: {str(e)}")
         return sorted(modules)
 
     def get_running_pids(self):
-        pids = []
-
         try:
-            for entry in os.listdir("/proc"):
-                if entry.isdigit():
-                    pids.append(int(entry))
+            return sorted([int(pid) for pid in os.listdir("/proc") if pid.isdigit()])
         except Exception as e:
-            return [f"ERROR_READING_PIDS: {str(e)}"]
+            return [f"ERROR: {str(e)}"]
 
-        return sorted(pids)
-
-    def get_dmesg_output(self, lines=50):
-        """
-        Reads the latest kernel messages.
-        This may require elevated permissions depending on system config.
-        """
+    def get_dmesg_output(self):
         try:
-            result = subprocess.run(
-                ["dmesg", "--color=never"],
-                capture_output=True,
-                text=True,
-                check=False
-            )
-
-            if result.returncode != 0:
-                return [f"DMESG_UNAVAILABLE: {result.stderr.strip()}"]
-
-            output_lines = result.stdout.strip().splitlines()
-            return output_lines[-lines:]
+            output = subprocess.check_output(["dmesg", "--color=never"], text=True)
+            return output.splitlines()[-50:]
         except Exception as e:
-            return [f"ERROR_READING_DMESG: {str(e)}"]
+            return [f"ERROR: {str(e)}"]
+
+    def get_process_maps_summary(self, max_pids=20):
+        summaries = []
+
+        pids = self.get_running_pids()
+
+        if not pids or isinstance(pids[0], str):
+            return []
+
+        for pid in pids[:max_pids]:
+            try:
+                with open(f"/proc/{pid}/maps", "r", errors="ignore") as f:
+                    lines = f.readlines()
+
+                suspicious_regions = 0
+
+                for line in lines:
+                    parts = line.split()
+
+                    if len(parts) >= 2:
+                        perms = parts[1]
+                        pathname = parts[-1] if len(parts) >= 6 else ""
+
+                        if "x" in perms and (pathname == "" or pathname.startswith("[")):
+                            suspicious_regions += 1
+
+                summaries.append({
+                    "pid": pid,
+                    "suspicious_regions": suspicious_regions
+                })
+
+            except:
+                continue
+
+        return summaries
 
     def collect_snapshot(self):
         return {
@@ -65,4 +69,5 @@ class ScannerAgent:
             "modules": self.get_loaded_modules(),
             "pids": self.get_running_pids(),
             "dmesg_tail": self.get_dmesg_output(),
+            "process_maps_summary": self.get_process_maps_summary()
         }

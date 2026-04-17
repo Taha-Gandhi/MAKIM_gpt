@@ -41,4 +41,9 @@ class RootkitPatternAgent:
                     findings["risk_score"] += 1
                     break
 
+        for proc in snapshot.get("process_maps_summary", []):
+            if proc["suspicious_regions"] > 0:
+                findings["suspicious_memory"].append(proc)
+                findings["risk_score"] += 2
+
         return findings
