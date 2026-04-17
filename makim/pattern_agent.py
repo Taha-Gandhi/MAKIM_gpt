@@ -24,22 +24,32 @@ class RootkitPatternAgent:
         }
 
         # Check modules
-        for module in snapshot.get("modules", []):
-            module_str = str(module).lower()
-            for keyword in self.SUSPICIOUS_MODULE_KEYWORDS:
-                if keyword in module_str:
-                    findings["suspicious_modules"].append(module)
-                    findings["risk_score"] += 2
-                    break
+        # for module in snapshot.get("modules", []):
+        #     module_str = str(module).lower()
+        #     for keyword in self.SUSPICIOUS_MODULE_KEYWORDS:
+        #         if keyword in module_str:
+        #             findings["suspicious_modules"].append(module)
+        #             findings["risk_score"] += 2
+        #             break
 
-        # Check dmesg
+        # # Check dmesg
+        # for line in snapshot.get("dmesg_tail", []):
+        #     line_str = str(line).lower()
+        #     for keyword in self.SUSPICIOUS_DMESG_KEYWORDS:
+        #         if keyword in line_str:
+        #             findings["suspicious_dmesg"].append(line)
+        #             findings["risk_score"] += 1
+        #             break
+
+        for module in snapshot.get("modules", []):
+            if any(k in module.lower() for k in ["rootkit", "hide", "hook"]):
+                findings["suspicious_modules"].append(module)
+                findings["risk_score"] += 2
+
         for line in snapshot.get("dmesg_tail", []):
-            line_str = str(line).lower()
-            for keyword in self.SUSPICIOUS_DMESG_KEYWORDS:
-                if keyword in line_str:
-                    findings["suspicious_dmesg"].append(line)
-                    findings["risk_score"] += 1
-                    break
+            if any(k in line.lower() for k in ["error", "fail", "denied"]):
+                findings["suspicious_dmesg"].append(line)
+                findings["risk_score"] += 1
 
         for proc in snapshot.get("process_maps_summary", []):
             if proc["suspicious_regions"] > 0:
