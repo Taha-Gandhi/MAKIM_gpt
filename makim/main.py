@@ -11,10 +11,6 @@ anomaly_detector = AnomalyDetector()
 pattern_agent = RootkitPatternAgent()
 report_agent = ReportAgent()
 ai_agent = AIAgent()
-explanation = ai_agent.explain(report)
-
-print("\n--- AI ANALYSIS ---")
-print(explanation)
 
 current_snapshot = scanner.collect_snapshot()
 baseline = baseline_manager.load_baseline()
@@ -39,3 +35,9 @@ else:
 
     path = report_agent.save_report(report)
     print(f"Report saved to: {path}")
+
+    # ✅ AI PART (correct position)
+    explanation = ai_agent.explain(report)
+
+    print("\n--- AI ANALYSIS ---")
+    print(explanation)
