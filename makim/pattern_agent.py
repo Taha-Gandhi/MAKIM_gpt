@@ -24,26 +24,32 @@ class RootkitPatternAgent:
             "risk_score": 0
         }
 
-        # Check modules
+        # --- Module check ---
         for module in snapshot.get("modules", []):
-            module_str = str(module).lower()
-            for keyword in self.SUSPICIOUS_MODULE_KEYWORDS:
-                if keyword in module_str:
-                    findings["suspicious_modules"].append(module)
-                    findings["risk_score"] += 2
-                    break
+            if any(k in module.lower() for k in ["rootkit", "hide", "hook"]):
+                findings["suspicious_modules"].append(module)
+                findings["risk_score"] += 3
 
-        # Check dmesg
+        # --- dmesg check (ignore normal AppArmor noise) ---
         for line in snapshot.get("dmesg_tail", []):
-            line_str = str(line).lower()
-            for keyword in self.SUSPICIOUS_DMESG_KEYWORDS:
-                if keyword in line_str:
-                    findings["suspicious_dmesg"].append(line)
-                    findings["risk_score"] += 1
-                    break
+            line_lower = line.lower()
 
+            if "apparmor" in line_lower:
+                continue  # ignore normal security logs
+
+            if any(k in line_lower for k in ["segfault", "exploit", "injection"]):
+                findings["suspicious_dmesg"].append(line)
+                findings["risk_score"] += 2
+
+        # --- memory check (ignore system processes) ---
         for proc in snapshot.get("process_maps_summary", []):
-            if proc["suspicious_regions"] > 0:
+            pid = proc.get("pid", 0)
+            regions = proc.get("suspicious_regions", 0)
+
+            if pid <= 100:  
+                continue  # ignore system processes
+
+            if regions > 1:
                 findings["suspicious_memory"].append(proc)
                 findings["risk_score"] += 2
 
