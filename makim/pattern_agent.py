@@ -20,36 +20,27 @@ class RootkitPatternAgent:
         findings = {
             "suspicious_modules": [],
             "suspicious_dmesg": [],
+            "suspicious_memory": [],
             "risk_score": 0
         }
 
         # Check modules
-        # for module in snapshot.get("modules", []):
-        #     module_str = str(module).lower()
-        #     for keyword in self.SUSPICIOUS_MODULE_KEYWORDS:
-        #         if keyword in module_str:
-        #             findings["suspicious_modules"].append(module)
-        #             findings["risk_score"] += 2
-        #             break
-
-        # # Check dmesg
-        # for line in snapshot.get("dmesg_tail", []):
-        #     line_str = str(line).lower()
-        #     for keyword in self.SUSPICIOUS_DMESG_KEYWORDS:
-        #         if keyword in line_str:
-        #             findings["suspicious_dmesg"].append(line)
-        #             findings["risk_score"] += 1
-        #             break
-
         for module in snapshot.get("modules", []):
-            if any(k in module.lower() for k in ["rootkit", "hide", "hook"]):
-                findings["suspicious_modules"].append(module)
-                findings["risk_score"] += 2
+            module_str = str(module).lower()
+            for keyword in self.SUSPICIOUS_MODULE_KEYWORDS:
+                if keyword in module_str:
+                    findings["suspicious_modules"].append(module)
+                    findings["risk_score"] += 2
+                    break
 
+        # Check dmesg
         for line in snapshot.get("dmesg_tail", []):
-            if any(k in line.lower() for k in ["error", "fail", "denied"]):
-                findings["suspicious_dmesg"].append(line)
-                findings["risk_score"] += 1
+            line_str = str(line).lower()
+            for keyword in self.SUSPICIOUS_DMESG_KEYWORDS:
+                if keyword in line_str:
+                    findings["suspicious_dmesg"].append(line)
+                    findings["risk_score"] += 1
+                    break
 
         for proc in snapshot.get("process_maps_summary", []):
             if proc["suspicious_regions"] > 0:
