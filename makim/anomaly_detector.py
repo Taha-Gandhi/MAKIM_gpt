@@ -24,7 +24,7 @@ class AnomalyDetector:
 
         findings["pid_change_count"] = len(findings["new_pids"]) + len(findings["missing_pids"])
 
-        if findings["pid_change_count"] > 20:
+        if findings["pid_change_count"] > 50:
             findings["pid_alert"] = True
 
         return findings
